@@ -1,6 +1,7 @@
-
-
 pub mod midpoint_terrain {
+    #[path="../../utils.rs"]
+    pub mod utils;
+    use utils::matrix_utils::normalise;
     use rand::{thread_rng, Rng};
     pub fn new(exponent: u32) -> Vec<Vec<f64>> {
         let len= (usize::pow(2, exponent)+1).try_into().unwrap();
@@ -53,7 +54,7 @@ pub mod midpoint_terrain {
             i += 1;
             spread *= 0.5;
         }
-        return matrix;
+        return normalise(matrix);
     }
     fn displace(incoming_matrix: Vec<Vec<f64>>, left_x: usize, right_x: usize, bottom_y: usize, top_y: usize, spread: f64) -> Vec<Vec<f64>> {
         let mut matrix = incoming_matrix;
