@@ -4,7 +4,7 @@ pub mod midpoint_terrain {
     use ndarray::*;
     use rand::{thread_rng, Rng};
     use utils::matrix_utils::*;
-    const EXPONENT: u32 = 6;
+    const EXPONENT: u32 = 10;
     const LEN: usize = usize::pow(2, EXPONENT)+1;
     pub fn new() -> Array2<f64> {
         let matrix = ndarray::Array2::<f64>::zeros((LEN, LEN));

@@ -86,6 +86,9 @@ pub mod erosion_mod {
 
                 particle.sediment += sediment_diff;
 
+                // TODO - calculate path along with the particle traveled this cycle
+                //  remove height from along the entire path
+
                 let to_remove = sediment_diff * particle.volume;
                 matrix[particle.pos] -= to_remove;
 
