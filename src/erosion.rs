@@ -5,7 +5,7 @@ pub mod erosion_mod {
     use ndarray::Array2;
     use utils::matrix_utils::*;
 
-    const PARTICLE_COUNT_MULTIPLIER: u64 = 2;
+    const PARTICLE_COUNT_MULTIPLIER: usize = 2;
     const DENSITY: f64 = 0.1;
     const EVAP_RATE: f64 = 0.01;
     // default dep_rate = 0.1
@@ -28,7 +28,7 @@ pub mod erosion_mod {
 
         let limit = matrix.shape()[0]-1;
         println!("pre-part_count");
-        let part_count = u64::pow(limit as u64, 2)*PARTICLE_COUNT_MULTIPLIER;
+        let part_count = limit*limit*PARTICLE_COUNT_MULTIPLIER;
 
         println!("part count: {}", part_count);
         for i in 0..part_count {

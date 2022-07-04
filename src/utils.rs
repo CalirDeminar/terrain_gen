@@ -1,6 +1,8 @@
 pub mod matrix_utils {
     use ndarray::Array2;
+    use ndarray_csv::{Array2Writer, Array2Reader};
     use ndarray_stats::*;
+    use csv::{ReaderBuilder, WriterBuilder};
     pub fn print(matrix: Array2<f64>) {
         let len = matrix.shape()[0];
         for x in 0..len{
@@ -32,6 +34,18 @@ pub mod matrix_utils {
         let dx = 0.5 * (matrix[left]-matrix[right]);
         let dy = 0.5 * (matrix[bottom]-matrix[top]);
         return (dx, dy);
+    }
+    pub fn write_matrix(matrix: &Array2<f64>, filename: &str) {
+        let file = std::fs::File::create(filename).unwrap();
+        let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
+        writer.serialize_array2(&matrix).unwrap();
+        writer.flush().unwrap();
+    }
+    pub fn read_matrix(filename: &str, len: usize) -> Array2<f64> {
+        let file = std::fs::File::open(filename).unwrap();
+        let mut reader = ReaderBuilder::new().has_headers(false).from_reader(file);
+        let output: Array2<f64> = reader.deserialize_array2((len, len)).unwrap();
+        return output;
     }
     fn get_neighbors(matrix: &Array2<f64>, x: usize, y: usize) -> [[usize; 2]; 4]{
         let index_limit = matrix.shape()[0]-1;
