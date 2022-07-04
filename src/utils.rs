@@ -35,6 +35,27 @@ pub mod matrix_utils {
         let dy = 0.5 * (matrix[bottom]-matrix[top]);
         return (dx, dy);
     }
+    pub fn matrix_normal(matrix: &Array2<f64>) -> Array2<(f64, f64)> {
+        let shape = matrix.shape();
+        let mut output = Array2::<(f64, f64)>::default((shape[0], shape[1]));
+        for x in 0..shape[0] {
+            for y in 0..shape[1] {
+                output[[x, y]] = get_surface_normal(matrix, x, y);
+            }
+        }
+        return output;
+    }
+    pub fn vector_matrix_sum(matrix: &Array2<(f64, f64)>) -> Array2<f64> {
+        let shape = matrix.shape();
+        let mut output = Array2::<f64>::zeros((shape[0], shape[1]));
+        for x in 0..shape[0] {
+            for y in 0..shape[1] {
+                let val = matrix[[x, y]];
+                output[[x, y]] = val.0 + val.1;
+            }
+        }
+        return output;
+}
     pub fn write_matrix(matrix: &Array2<f64>, filename: &str) {
         let file = std::fs::File::create(filename).unwrap();
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
@@ -46,6 +67,36 @@ pub mod matrix_utils {
         let mut reader = ReaderBuilder::new().has_headers(false).from_reader(file);
         let output: Array2<f64> = reader.deserialize_array2((len, len)).unwrap();
         return output;
+    }
+    pub fn apply_min_float(incoming_matrix: &Array2::<f64>, min: f64) -> Array2::<f64> {
+        let len = incoming_matrix.shape()[0];
+        let mut matrix = Array2::<f64>::zeros((len, len));
+        for x in 0..matrix.shape()[0] {
+            for y in 0..matrix.shape()[1] {
+                matrix[[x, y]] = matrix[[x, y]].max(min);
+            }
+        }
+        return matrix;
+    }
+    pub fn apply_max_float(incoming_matrix: &Array2::<f64>, max: f64) -> Array2::<f64> {
+        let len = incoming_matrix.shape()[0];
+        let mut matrix = Array2::<f64>::zeros((len, len));
+        for x in 0..matrix.shape()[0] {
+            for y in 0..matrix.shape()[1] {
+                matrix[[x, y]] = matrix[[x, y]].max(max);
+            }
+        }
+        return matrix;
+    }
+    pub fn apply_max_matrix(incoming_matrix: &Array2::<f64>, max: &Array2::<f64>) -> Array2::<f64> {
+        let len = incoming_matrix.shape()[0];
+        let mut matrix = Array2::<f64>::zeros((len, len));
+        for x in 0..matrix.shape()[0] {
+            for y in 0..matrix.shape()[1] {
+                matrix[[x, y]] = matrix[[x, y]].max(max[[x, y]]);
+            }
+        }
+        return matrix;
     }
     fn get_neighbors(matrix: &Array2<f64>, x: usize, y: usize) -> [[usize; 2]; 4]{
         let index_limit = matrix.shape()[0]-1;
