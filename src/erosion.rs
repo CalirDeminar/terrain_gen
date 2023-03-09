@@ -1,6 +1,5 @@
 pub mod erosion_mod {
-    #[path="../../utils.rs"]
-    pub mod utils;
+    use crate::utils;
     use rand::{thread_rng, Rng};
     use ndarray::Array2;
     use utils::matrix_utils::*;

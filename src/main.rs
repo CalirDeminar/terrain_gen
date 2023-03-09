@@ -52,6 +52,8 @@ fn main() {
     // erode_terrain();
     // erode_culm_terrain();
     // diff_terrain();
+    // view_terrain();
+    gen_terrain();
     view_terrain();
     println!("----");
 }

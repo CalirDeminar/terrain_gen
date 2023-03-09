@@ -1,8 +1,7 @@
 pub mod erosion_culmulative {
     use ndarray::*;
     use rand::{thread_rng, Rng};
-
-    use crate::midpoint::midpoint_terrain::utils::matrix_utils::*;
+    use crate::{matrix_normal, vector_matrix_sum, apply_min_float, apply_max_matrix};
 
     // cell size constants
     const CELL_WIDTH: f64 = 1.0;

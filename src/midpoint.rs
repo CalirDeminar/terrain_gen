@@ -1,6 +1,5 @@
 pub mod midpoint_terrain {
-    #[path="../../utils.rs"]
-    pub mod utils;
+    use crate::utils;
     use ndarray::*;
     use rand::{thread_rng, Rng};
     use utils::matrix_utils::*;
