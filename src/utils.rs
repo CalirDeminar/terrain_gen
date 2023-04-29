@@ -3,10 +3,10 @@ pub mod matrix_utils {
     use ndarray_csv::{Array2Writer, Array2Reader};
     use ndarray_stats::*;
     use csv::{ReaderBuilder, WriterBuilder};
-    pub fn print(matrix: Array2<f64>) {
+    pub fn print(matrix: &Array2<f64>) {
         let len = matrix.shape()[0];
         for x in 0..len{
-            println!("{:?}", matrix.row(x));
+            println!("{:?}", matrix.row(x).map(|c| format!("{:.*}", 5, c).parse::<f32>().unwrap()));
         }
     }
     pub fn normalise(incoming_matrix: Array2<f64>) -> Array2<f64> {
@@ -93,7 +93,7 @@ pub mod matrix_utils {
         let mut matrix = Array2::<f64>::zeros((len, len));
         for x in 0..matrix.shape()[0] {
             for y in 0..matrix.shape()[1] {
-                matrix[[x, y]] = matrix[[x, y]].max(max[[x, y]]);
+                matrix[[x, y]] = incoming_matrix[[x, y]].max(max[[x, y]]);
             }
         }
         return matrix;

@@ -21,13 +21,13 @@ pub mod erosion_mod {
         speed: [f64; 2],
         pos: [usize; 2]
     }
-    pub fn erode(incoming_matrix: Array2<f64>) -> Array2<f64> {
+    pub fn erode(incoming_matrix: Array2<f64>, part_multipler: usize) -> Array2<f64> {
         let mut matrix = incoming_matrix;
         let mut rng = thread_rng();
 
         let limit = matrix.shape()[0]-1;
         println!("pre-part_count");
-        let part_count = limit*limit*PARTICLE_COUNT_MULTIPLIER;
+        let part_count = (limit*limit*part_multipler)/10;
 
         println!("part count: {}", part_count);
         for i in 0..part_count {
@@ -83,7 +83,7 @@ pub mod erosion_mod {
                     * TIME_SCALE 
                     * DEPOSITION_RATE;
 
-                particle.sediment += sediment_diff;
+                particle.sediment += sediment_diff * particle.volume;
 
                 // TODO - calculate path along with the particle traveled this cycle
                 //  remove height from along the entire path

@@ -20,7 +20,7 @@ pub mod terrain {
 
     pub fn erode_terrain() {
         let matrix = read_matrix(TERRAIN_FILENAME, len_from_exponent(EXPONENT));
-        let eroded = erosion_mod::erode(matrix);
+        let eroded = erosion_mod::erode(matrix, 2);
         
         write_matrix(&eroded,  "./test-erosion.csv");
         render_matrix(&eroded, & "./test-erosion.png");
@@ -28,7 +28,7 @@ pub mod terrain {
 
     pub fn erode_culm_terrain() {
         let matrix = read_matrix(TERRAIN_FILENAME, len_from_exponent(EXPONENT));
-        let eroded = erosion_culmulative::erode(matrix.clone());
+        let eroded = erosion_culmulative::erode(matrix.clone(), 20);
         let diff = (eroded - matrix.view()) * 100.0;
         write_matrix(&diff, ERODED_FILENAME);
         render_matrix(&diff, &"./test-erosion-culm-diff.png");
@@ -43,11 +43,19 @@ pub mod terrain {
     }
 }
 
-
+#[cfg(test)]
 mod tests {
     #[test]
     fn generate_test_image() {
         use crate::terrain::terrain::gen_terrain;
         gen_terrain();
+    }
+    
+    #[test]
+    fn test_culm_erosion() {
+        use crate::terrain::midpoint::midpoint_terrain::new;
+        use crate::terrain::erosion_culm::erosion_culmulative::erode;
+        let terrain = new(5);
+        erode(terrain, 5);
     }
 }
