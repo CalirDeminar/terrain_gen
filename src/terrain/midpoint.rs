@@ -3,15 +3,15 @@ pub mod midpoint_terrain {
     use ndarray::*;
     use rand::{thread_rng, Rng};
     use utils::matrix_utils::*;
-    const EXPONENT: u32 = 10;
+    // const EXPONENT: u32 = 10;
     // pub const LEN: usize = usize::pow(2, EXPONENT)+1;
     pub fn len_from_exponent(exponent: u32) -> usize {
         return usize::pow(2, exponent);
     }
     pub fn new(exponent: u32) -> Array2<f64> {
-        let len = usize::pow(2, exponent);
+        let len = usize::pow(2, exponent) + 1;
         let matrix = ndarray::Array2::<f64>::zeros((len, len));
-        return generate(init_corners(matrix));
+        return generate(init_corners(matrix), exponent);
     }
     fn init_corners(incoming_matrix: Array2<f64>) -> Array2<f64> {
         let mut matrix = incoming_matrix;
@@ -22,11 +22,11 @@ pub mod midpoint_terrain {
         matrix[[len, len]] = random();
         return matrix;
     }
-    fn generate(incoming_matrix: Array2<f64>) -> Array2<f64> {
+    fn generate(incoming_matrix: Array2<f64>, exponent: u32) -> Array2<f64> {
         let mut matrix = incoming_matrix;
         let mut spread = 0.3;
         let len = matrix.shape()[0];
-        for i in 0..EXPONENT{
+        for i in 0..exponent{
             let chunk_count = usize::pow(2, i);
             let chunk_width = (len - 1) / chunk_count;
 

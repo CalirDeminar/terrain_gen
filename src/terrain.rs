@@ -10,7 +10,7 @@ pub mod terrain {
     const TERRAIN_FILENAME: &str = "./test-terrain.csv";
     const ERODED_FILENAME: &str = "./test-erosion-culm-diff.csv";
 
-    const EXPONENT: u32 = 5;
+    const EXPONENT: u32 = 8;
 
     pub fn gen_terrain() {
         let matrix = new(EXPONENT);
@@ -40,5 +40,14 @@ pub mod terrain {
         let diff = (eroded - terrain.view()) * 100.0;
         write_matrix(&diff, "./test-erosion-diff.csv");
         render_matrix(&diff, &"./test-erosion-diff.png");
+    }
+}
+
+
+mod tests {
+    #[test]
+    fn generate_test_image() {
+        use crate::terrain::terrain::gen_terrain;
+        gen_terrain();
     }
 }
