@@ -1,56 +1,69 @@
+pub mod renderer_2d;
 pub mod renderer {
     use nannou::prelude::*;
-    use crate::*;
-    pub fn render(app: &App, mode: &ViewModes, terrain: &Array2<f64>, eroded_terrain: &Array2<f64>) -> Draw {
-        let draw = app.draw();
-        let terrain = fetch_terrain_matrix(mode, terrain, eroded_terrain);
+    use nannou_egui::egui::Ui;
+    use crate::{*, renderer::renderer_2d::render_2d::*};
+
+    pub fn render(app: &App, settings: Settings, terrain_data: &TerrainData) -> Draw {
+        let terrain = fetch_terrain_matrix(&settings.view_mode, terrain_data);
         let len = terrain.shape()[0];
 
         let win = app.window_rect();
         let [pix_w, pix_h] = calc_pixel_size(&win, len);
-        for x in 0..len {
-            for y in 0..len{
-                let val = terrain[[x, y]];
-                let (nx, ny) = get_surface_normal(&terrain, x, y);
-                let color = rgb(val, val, val);
-                let color_inv = rgb(1.0-(val+0.1), 1.0-(val+0.1), 1.0-(val+0.1));
-                
-                draw.rect()
-                    .height(pix_h)
-                    .width(pix_w)
-                    .color(color)
-                    .x(map_range(x, 0, len, win.left(), win.right()))
-                    .y(map_range(y, len, 0, win.bottom(), win.top()));
-                
-                
-                // let v_x = map_range(x, 0, len, win.left(), win.right());
-                // let v_y = map_range(y, len, 0, win.bottom(), win.top());
-                // let p1 = pt2(v_x, v_y);
-                // let p2 = pt2(v_x + (nx as f32 * pix_w * 1.5), v_y + (ny as f32 * pix_h * 1.5 ));
-                
-                // draw.line().start(p1).end(p2).color(color_inv).weight(1.0);
-            }
+
+        let mut draw = app.draw();
+        draw = render_2d_terrain(draw, &terrain, win, pix_w, pix_h); 
+        if settings.overlay_mode != OverlayModes::None {
+            let overlay = fetch_terrain_overlay_matrix(&settings.overlay_mode, terrain_data);
+            draw = render_2d_overlay(draw, &overlay, win, 8)
         }
-            
-        println!("Rerender");
-        // println!("{:?}", model.settings);
-        // println!("Different?: {:?}", model.terrain != model.eroded_terrain);
-        utils::matrix_utils::print(&terrain);
-        
-        return draw;    
+        return draw;
     }
+
+    pub fn draw_ui(ui: &mut Ui, settings: &mut Settings) -> (bool, bool) {
+        ui.heading("Terrain Generation");
+        ui.label("Terrain Exponent: ");
+        ui.add(egui::Slider::new(&mut settings.exponent, 1..=10));
+
+        let regenerate = ui.button("Regenerate").clicked();
+
+        ui.heading("View Mode:");
+        ui.radio_value(&mut settings.view_mode, ViewModes::Eroded, "Eroded");
+        ui.radio_value(&mut settings.view_mode, ViewModes::Terrain, "Origional");
+        ui.radio_value(&mut settings.view_mode, ViewModes::Diff, "Diff");
+        ui.heading("Overlay Mode:");
+        ui.radio_value(&mut settings.overlay_mode, OverlayModes::None, "Off");
+        ui.radio_value(&mut settings.overlay_mode, OverlayModes::Height, "Height");
+        ui.radio_value(&mut settings.overlay_mode, OverlayModes::Sediment, "Sediment");
+        ui.radio_value(&mut settings.overlay_mode, OverlayModes::Water, "Water");
+
+        ui.separator();
+        ui.heading("Culmulative Erosion");
+        ui.label("Iterations:");
+        ui.add(egui::Slider::new(&mut settings.culm_erosion_iterations, 2..=10));
+        let culm_erode = ui.button("Erode: Culm").clicked();
+
+        return (regenerate, culm_erode);
+    }
+
     fn calc_pixel_size(win: &Rect, len: usize) -> [f32; 2] {
         let win_width = win.right() - win.left();
         let win_height = win.top() - win.bottom();
 
         return [win_width / len as f32, win_height / len as f32];
-
     }
-    fn fetch_terrain_matrix(mode: &ViewModes, terrain: &Array2<f64>, eroded_terrain: &Array2<f64>) -> Array2<f64> {
+    fn fetch_terrain_overlay_matrix(mode: &OverlayModes, terrain: &TerrainData) -> Array2<f64> {
+        match mode{
+            OverlayModes::Water => return terrain.water.clone(),
+            OverlayModes::Sediment => return terrain.sediment.clone(),
+            OverlayModes::Height | OverlayModes::None => return terrain.terrain_base.clone()
+        }
+    }
+    fn fetch_terrain_matrix(mode: &ViewModes, terrain: &TerrainData) -> Array2<f64> {
         match  mode{
-            ViewModes::Terrain => return terrain.clone(),
-            ViewModes::Eroded => return eroded_terrain.clone(),
-            ViewModes::Diff => return terrain.clone() - eroded_terrain.clone()
+            ViewModes::Terrain => return terrain.terrain_base.clone(),
+            ViewModes::Eroded => return terrain.eroded_terrain.clone(),
+            ViewModes::Diff => return terrain.terrain_base.clone() - terrain.eroded_terrain.clone()
         }
     }
 }

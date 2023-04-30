@@ -23,6 +23,10 @@ pub mod erosion_culmulative {
     const DEP_RATE: f64 = 0.00001;
 
     pub fn erode(incoming_matrix: Array2<f64>, iterations: usize) -> Array2<f64> {
+        let (r, _, _) =  erode_debug(incoming_matrix, iterations);
+        return r;
+    }
+    pub fn erode_debug(incoming_matrix: Array2<f64>, iterations: usize) -> (Array2<f64>, Array2<f64>, Array2<f64>) {
         let mut terrain = incoming_matrix;
         let mut rng = thread_rng();
 
@@ -88,7 +92,7 @@ pub mod erosion_culmulative {
             velocity = (GRAVITY * CELL_WIDTH) * terrain_d_z;
         }
 
-        return terrain;
+        return (terrain, water, sediment);
     }
     fn displace(incoming_matrix: Array2<f64>, gradient: &Array2<f64>) -> Array2<f64> {
         let mut matrix = incoming_matrix;

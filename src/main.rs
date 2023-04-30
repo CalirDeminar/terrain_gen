@@ -18,22 +18,33 @@ fn main() {
     nannou::app(model).update(update).run();
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum ViewModes {Terrain, Eroded, Diff}
 
-#[derive(PartialEq, Clone, Debug)]
-struct Settings {
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum OverlayModes {None, Height, Sediment, Water}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub struct Settings {
     exponent: u32,
     culm_erosion_iterations: u32,
     iter_erosion_multipler: usize,
-    mode: ViewModes,
+    view_mode: ViewModes,
+    overlay_mode: OverlayModes
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct TerrainData {
+    terrain_base: Array2<f64>,
+    eroded_terrain: Array2<f64>,
+    water: Array2<f64>,
+    sediment: Array2<f64>
 }
 
 pub struct Model {
     egui: Egui,
     settings: Settings,
-    terrain: Array2<f64>,
-    eroded_terrain: Array2<f64>,
+    terrain_data: TerrainData,
     draw_cache: Draw,
     redraw: bool
 }
@@ -56,15 +67,22 @@ fn model(app: &App) -> Model {
             exponent: starting_exponent,
             culm_erosion_iterations: 1,
             iter_erosion_multipler: 1,
-            mode: ViewModes::Eroded
+            view_mode: ViewModes::Eroded,
+            overlay_mode: OverlayModes::None
         };
     let terrain = midpoint_terrain::new(settings.exponent);
+    let len = terrain.shape()[0];
+    let zeros = ndarray::Array2::<f64>::zeros((len, len));
 
     Model {
         egui,
         settings,
-        terrain: terrain.clone(),
-        eroded_terrain: terrain.clone(),
+        terrain_data: TerrainData {
+            terrain_base: terrain.clone(),
+            eroded_terrain: terrain.clone(),
+            water: zeros.clone(),
+            sediment: zeros.clone(),
+        },
         draw_cache: app.draw(),
         redraw: true
     }
@@ -79,48 +97,28 @@ fn update(app: &App, model: &mut Model, update: Update){
 
     let ctx = egui.begin_frame();
     egui::Window::new("Settings").show(&ctx, |ui| {
-        ui.heading("Terrain Generation");
-        ui.label("Terrain Exponent: ");
-        ui.add(egui::Slider::new(&mut settings.exponent, 1..=10));
+        let (regenerate, culm_erode) = renderer::renderer::draw_ui(ui, settings);
 
-        let regenerate = ui.button("Regenerate").clicked();
         if regenerate {
-            model.terrain = midpoint_terrain::new(settings.exponent);
-            model.eroded_terrain = model.terrain.clone();
+            model.terrain_data.terrain_base = midpoint_terrain::new(settings.exponent);
+            model.terrain_data.eroded_terrain = model.terrain_data.terrain_base.clone();
             model.redraw = true;
         }
 
-        ui.heading("View Mode:");
-        ui.radio_value(&mut settings.mode, ViewModes::Eroded, "Eroded");
-        ui.radio_value(&mut settings.mode, ViewModes::Terrain, "Origional");
-        ui.radio_value(&mut settings.mode, ViewModes::Diff, "Diff");
-        
-
-        ui.separator();
-        ui.heading("Culmulative Erosion");
-        ui.label("Iterations:");
-        ui.add(egui::Slider::new(&mut settings.culm_erosion_iterations, 2..=10));
-        let culm_erode = ui.button("Erode: Culm").clicked();
         if culm_erode {
-            model.eroded_terrain = erosion_culmulative::erode(model.eroded_terrain.clone(), settings.culm_erosion_iterations as usize);
+            (model.terrain_data.eroded_terrain, 
+                model.terrain_data.water, 
+                model.terrain_data.sediment
+            ) = erosion_culmulative::erode_debug(model.terrain_data.eroded_terrain.clone(), settings.culm_erosion_iterations as usize);
             model.redraw = true;
         }
 
-        ui.separator();
-        ui.heading("Iterative Erosion");
-        ui.label("Iterations:");
-        ui.add(egui::Slider::new(&mut settings.iter_erosion_multipler, 1..=5));
-        let iter_erode = ui.button("Erode: Iter").clicked();
-        if iter_erode {
-            model.eroded_terrain = erosion::erosion_mod::erode(model.eroded_terrain.clone(), settings.iter_erosion_multipler);
-            model.redraw = true;
-        }
-        if settings.mode != old_settings.mode {
+        if settings.view_mode != old_settings.view_mode || settings.overlay_mode != old_settings.overlay_mode {
             model.redraw = true;
         }
     });
     if model.redraw {
-        model.draw_cache = render(app, &model.settings.mode, &model.terrain, &model.eroded_terrain);
+        model.draw_cache = render(app, model.settings.clone(), &model.terrain_data);
         model.redraw = false;
     }
     
