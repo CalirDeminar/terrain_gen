@@ -2,6 +2,7 @@
 pub mod utils;
 pub mod graphing;
 pub mod terrain;
+pub mod renderer;
 use terrain::erosion;
 use terrain::{midpoint::midpoint_terrain::len_from_exponent, erosion_culm::erosion_culmulative
 };
@@ -11,27 +12,30 @@ use utils::matrix_utils::*;
 use nannou::prelude::*;
 use nannou_egui::{self, egui, Egui};
 
+use crate::renderer::renderer::*;
+
 fn main() {
     nannou::app(model).update(update).run();
 }
 
 #[derive(PartialEq, Clone, Debug)]
-enum ViewModes {Terrain, Eroded, Diff}
+pub enum ViewModes {Terrain, Eroded, Diff}
 
 #[derive(PartialEq, Clone, Debug)]
 struct Settings {
     exponent: u32,
     culm_erosion_iterations: u32,
     iter_erosion_multipler: usize,
-    mode: ViewModes
+    mode: ViewModes,
 }
 
-struct Model {
+pub struct Model {
     egui: Egui,
     settings: Settings,
     terrain: Array2<f64>,
     eroded_terrain: Array2<f64>,
-    draw_cache: Draw
+    draw_cache: Draw,
+    redraw: bool
 }
 
 fn model(app: &App) -> Model {
@@ -61,7 +65,8 @@ fn model(app: &App) -> Model {
         settings,
         terrain: terrain.clone(),
         eroded_terrain: terrain.clone(),
-        draw_cache: app.draw()
+        draw_cache: app.draw(),
+        redraw: true
     }
 }
 
@@ -69,7 +74,6 @@ fn update(app: &App, model: &mut Model, update: Update){
     let egui = &mut model.egui;
     let old_settings = model.settings.clone();
     let settings = &mut model.settings;
-    let mut redraw = false;
 
     egui.set_elapsed_time(update.since_start);
 
@@ -83,7 +87,7 @@ fn update(app: &App, model: &mut Model, update: Update){
         if regenerate {
             model.terrain = midpoint_terrain::new(settings.exponent);
             model.eroded_terrain = model.terrain.clone();
-            redraw = true;
+            model.redraw = true;
         }
 
         ui.heading("View Mode:");
@@ -99,7 +103,7 @@ fn update(app: &App, model: &mut Model, update: Update){
         let culm_erode = ui.button("Erode: Culm").clicked();
         if culm_erode {
             model.eroded_terrain = erosion_culmulative::erode(model.eroded_terrain.clone(), settings.culm_erosion_iterations as usize);
-            redraw = true;
+            model.redraw = true;
         }
 
         ui.separator();
@@ -109,54 +113,17 @@ fn update(app: &App, model: &mut Model, update: Update){
         let iter_erode = ui.button("Erode: Iter").clicked();
         if iter_erode {
             model.eroded_terrain = erosion::erosion_mod::erode(model.eroded_terrain.clone(), settings.iter_erosion_multipler);
-            redraw = true;
+            model.redraw = true;
         }
-
-
-        // ui.separator();
-        // ui.heading("Iterative Erosion");
+        if settings.mode != old_settings.mode {
+            model.redraw = true;
+        }
     });
-    if redraw || settings.mode != old_settings.mode {
-        let draw = app.draw();
-            let base = model.terrain.clone();
-        let eroded = model.eroded_terrain.clone();
-        let diff = base - eroded;
-
-        let mut working_terrain = &model.terrain;
-        if settings.mode == ViewModes::Eroded {
-            working_terrain = &model.eroded_terrain;
-        }
-        if settings.mode == ViewModes::Diff {
-            working_terrain = &diff;
-        }
-
-        let len = working_terrain.shape()[0]-1;
-
-        let win = app.window_rect();
-        let win_width = win.right() - win.left();
-        let win_height = win.top() - win.bottom();
-
-        let pixel_width = win_width / len as f32;
-        let pixel_height = win_height / len as f32;
-        
-        for x in 0..len{
-            for y in 0..len{
-                let val = working_terrain[[x, y]];
-                let color = rgb(val, val, val);
-                draw.rect()
-                    .height(pixel_height)
-                    .width(pixel_width)
-                    .color(color)
-                    .x(map_range(x, 0, len, win.left(), win.right()) + (pixel_width / 2.0))
-                    .y(map_range(y, len, 0, win.bottom(), win.top()) + (pixel_height / 2.0));
-            }
-        }
-        model.draw_cache = draw;
-        println!("Rerender");
-        // println!("{:?}", model.settings);
-        // println!("Different?: {:?}", model.terrain != model.eroded_terrain);
-        utils::matrix_utils::print(working_terrain);
+    if model.redraw {
+        model.draw_cache = render(app, &model.settings.mode, &model.terrain, &model.eroded_terrain);
+        model.redraw = false;
     }
+    
 }
 
 fn raw_window_event(app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent){
